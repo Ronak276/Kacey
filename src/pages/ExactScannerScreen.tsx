@@ -240,11 +240,11 @@ export const ExactScannerScreen: React.FC = () => {
       {/* ======================================================== */}
       <div className="relative z-30 flex flex-col items-center pb-4 pt-1">
         {/* Controls row: Gallery button on left | Centered Shutter */}
-        <div className="w-full px-10 flex items-center justify-between mb-3.5">
+        <div className="w-full px-8 flex items-center justify-between mb-2">
           {/* Gallery Button: Exact rounded square from reference */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-12 h-12 rounded-[18px] bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center border border-white/15 transition-all cursor-pointer shadow-md"
+            className="w-11 h-11 rounded-[16px] bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center border border-white/15 transition-all cursor-pointer shadow-md"
             title="Upload photo from phone gallery"
           >
             <GalleryIcon className="w-5 h-5 stroke-[2]" />
@@ -254,7 +254,7 @@ export const ExactScannerScreen: React.FC = () => {
           <button
             onClick={handleCapture}
             disabled={scanning}
-            className="w-[70px] h-[70px] rounded-full p-[4px] bg-white shadow-2xl active:scale-90 transition-transform cursor-pointer flex items-center justify-center -ml-2"
+            className="w-[68px] h-[68px] rounded-full p-[4px] bg-white shadow-2xl active:scale-90 transition-transform cursor-pointer flex items-center justify-center -ml-2"
             title="Capture Test Strip"
           >
             <div className="w-full h-full rounded-full bg-[#0086ff] hover:bg-[#0070d2] transition-colors shadow-inner flex items-center justify-center">
@@ -263,15 +263,41 @@ export const ExactScannerScreen: React.FC = () => {
           </button>
 
           {/* Symmetrical placeholder for balance */}
-          <div className="w-12 h-12"></div>
+          <div className="w-11 h-11"></div>
+        </div>
+
+        {/* Quick Test Strip Samples Bar for instant testing */}
+        <div className="w-full px-5 mb-2 flex items-center justify-center gap-1.5 overflow-x-auto no-scrollbar">
+          <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider mr-1">Test with:</span>
+          <button
+            onClick={() => executeAnalysis('/assets/strip_sample_normal.jpg')}
+            disabled={scanning}
+            className="px-2.5 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold cursor-pointer transition-all active:scale-95 whitespace-nowrap"
+          >
+            Normal Strip
+          </button>
+          <button
+            onClick={() => executeAnalysis('/assets/strip_sample_abnormal.jpg')}
+            disabled={scanning}
+            className="px-2.5 py-1 rounded-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold cursor-pointer transition-all active:scale-95 whitespace-nowrap"
+          >
+            Abnormal Strip
+          </button>
+          <button
+            onClick={() => executeAnalysis('/assets/strip_sample_antifreeze.jpg')}
+            disabled={scanning}
+            className="px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold cursor-pointer transition-all active:scale-95 whitespace-nowrap"
+          >
+            EG Antifreeze
+          </button>
         </div>
 
         {/* White Rounded Tile: Supported Tests (Screen 3 Exact) */}
-        <div className="w-[88%] max-w-[320px] bg-white rounded-full py-2.5 px-4 shadow-lg text-center">
-          <p className="text-[12px] font-black text-slate-800 tracking-tight leading-tight">
+        <div className="w-[88%] max-w-[320px] bg-white rounded-full py-2 px-4 shadow-lg text-center">
+          <p className="text-[11px] font-black text-slate-800 tracking-tight leading-tight">
             Supported Tests :
           </p>
-          <p className="text-[11px] font-bold text-[#0070d2] mt-0.5 leading-tight">
+          <p className="text-[10px] font-bold text-[#0070d2] mt-0.5 leading-tight">
             Urine • Antifreeze • Drug Screen
           </p>
         </div>
