@@ -17,27 +17,18 @@ import { motion, type Variants } from 'framer-motion';
 
 // Container variant orchestrates staggered child animations
 const containerVariants: Variants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.05,
-    },
   },
 };
 
-// Item variant for smooth bottom-to-top spring transition (kamzo style)
+// Item variant for rock solid stable rendering (no jumping/shaking)
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 35 },
+  hidden: { opacity: 1, y: 0 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      type: 'spring' as const,
-      damping: 25,
-      stiffness: 240,
-    },
   },
 };
 

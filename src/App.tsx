@@ -114,8 +114,8 @@ export const App: React.FC = () => {
         <div className="flex-1 w-full h-full overflow-hidden relative flex flex-col bg-white">
           {renderCurrentContent()}
 
-          {/* Persistent Bottom Bar when logged in */}
-          {isLoggedIn && <ExactBottomNav />}
+          {/* Persistent Bottom Bar when logged in - Hidden on Report Detail */}
+          {isLoggedIn && activeTab !== 'report-detail' && <ExactBottomNav />}
         </div>
       </div>
     </div>
