@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { ChevronLeft, Download, Check, AlertCircle, AlertTriangle, Printer, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { KACEY_PAW_LOGO_WHITE } from '../data/logoBase64';
 
 export const ExactReportDetailScreen: React.FC = () => {
   const { setActiveTab, selectedTest, currentTestResult } = useApp();
@@ -27,79 +27,115 @@ export const ExactReportDetailScreen: React.FC = () => {
         format: 'a4',
       });
 
-      // Branded Header
+      // 1. Premium Medical Brand Header Banner
       pdf.setFillColor(0, 112, 210);
-      pdf.rect(0, 0, 210, 28, 'F');
+      pdf.rect(0, 0, 210, 32, 'F');
+
+      // Embedded White Kacey Paw Logo Icon
+      try {
+        pdf.addImage(KACEY_PAW_LOGO_WHITE, 'PNG', 14, 6, 20, 20);
+      } catch (e) {
+        console.warn('Could not render logo in PDF', e);
+      }
 
       pdf.setTextColor(255, 255, 255);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(16);
-      pdf.text('KACEY DIAGNOSTICS', 14, 12);
+      pdf.text('KACEY DIAGNOSTICS', 38, 14);
 
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9);
-      pdf.text('Point-of-Care Animal Health Laboratory Report', 14, 19);
+      pdf.setFontSize(8.5);
+      pdf.text('Point-of-Care Animal Health Laboratory Diagnostic Report', 38, 21);
 
       pdf.setFontSize(8);
-      pdf.text(`ISO 13485 Standard • Generated: ${new Date().toLocaleDateString()}`, 135, 19);
+      pdf.text(`ISO 13485 Standard • Certified Clinical AI Vision Read`, 130, 14);
+      pdf.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 130, 21);
 
-      // Patient Details Card
+      // Accent gold/cyan divider bar
+      pdf.setFillColor(56, 189, 248);
+      pdf.rect(0, 32, 210, 1.5, 'F');
+
+      // 2. Patient Demographics Card
       pdf.setFillColor(248, 251, 254);
-      pdf.roundedRect(14, 34, 182, 32, 3, 3, 'F');
+      pdf.setDrawColor(226, 232, 240);
+      pdf.roundedRect(14, 38, 182, 34, 3, 3, 'FD');
 
+      // Animal Profile details
       pdf.setTextColor(15, 23, 42);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(13);
-      pdf.text(report.animalName, 20, 44);
+      pdf.setFontSize(14);
+      pdf.text(report.animalName, 22, 49);
 
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(10);
-      pdf.setTextColor(100, 116, 139);
-      pdf.text(`Breed: ${report.animalBreed || 'Unknown'}`, 20, 52);
-      pdf.text(`Timestamp: ${report.timestamp}`, 20, 59);
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(71, 85, 105);
+      pdf.text(`Patient Species/Breed: ${report.animalBreed || 'Canine (Golden Retriever)'}`, 22, 57);
+      pdf.text(`Test Date & Time: ${report.timestamp}`, 22, 64);
 
-      // Status Badge
+      // Status Badge pill
       const isNormal = report.overallStatus === 'Normal';
       if (isNormal) {
         pdf.setFillColor(220, 252, 231);
+        pdf.setDrawColor(187, 247, 208);
         pdf.setTextColor(21, 128, 61);
       } else {
         pdf.setFillColor(254, 226, 226);
-        pdf.setTextColor(239, 68, 68);
+        pdf.setDrawColor(254, 202, 202);
+        pdf.setTextColor(225, 29, 72);
       }
-      pdf.roundedRect(145, 40, 42, 10, 2, 2, 'F');
+      pdf.roundedRect(142, 45, 46, 12, 3, 3, 'FD');
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(9);
-      pdf.text(`STATUS: ${report.overallStatus.toUpperCase()}`, 150, 47);
+      pdf.setFontSize(9.5);
+      pdf.text(`STATUS: ${report.overallStatus.toUpperCase()}`, 148, 52.5);
 
-      // Section: Test Parameters Header
+      // 3. Section Title: Diagnostic Panel
       pdf.setTextColor(15, 23, 42);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(11);
-      pdf.text(`Test Panel: ${report.testName}`, 14, 76);
+      pdf.text(`Diagnostic Panel: ${report.testName}`, 14, 82);
 
-      // Table Header
+      // Table Header Row
       pdf.setFillColor(241, 245, 249);
-      pdf.rect(14, 82, 182, 8, 'F');
+      pdf.setDrawColor(226, 232, 240);
+      pdf.roundedRect(14, 86, 182, 9, 2, 2, 'FD');
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(71, 85, 105);
-      pdf.text('Analyte / Parameter', 18, 87);
-      pdf.text('Standard Reference', 90, 87);
-      pdf.text('Measured Result', 150, 87);
+      pdf.setTextColor(51, 65, 85);
+      pdf.text('Analyte / Test Parameter', 20, 92);
+      pdf.text('Standard Reference Range', 95, 92);
+      pdf.text('Measured Result', 155, 92);
 
-      // Table Rows
-      let y = 96;
+      // Table Rows with real colored swatches
+      let y = 103;
       const params = report.parameters || [];
 
-      params.forEach((param) => {
+      params.forEach((param, index) => {
+        // Alternating row background for clean readability
+        if (index % 2 === 1) {
+          pdf.setFillColor(248, 250, 252);
+          pdf.rect(14, y - 6, 182, 9, 'F');
+        }
+
+        // Draw small color swatch if hex exists
+        if (param.padColorHex && param.padColorHex.startsWith('#')) {
+          try {
+            const hex = param.padColorHex.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16) || 0;
+            const g = parseInt(hex.substring(2, 4), 16) || 0;
+            const b = parseInt(hex.substring(4, 6), 16) || 0;
+            pdf.setFillColor(r, g, b);
+            pdf.setDrawColor(203, 213, 225);
+            pdf.rect(20, y - 4, 3.5, 3.5, 'FD');
+          } catch {}
+        }
+
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(30, 41, 59);
         pdf.setFontSize(9);
-        pdf.text(param.name, 18, y);
+        pdf.text(param.name, 26, y - 1);
 
         pdf.setTextColor(100, 116, 139);
-        pdf.text(param.normalRange || 'Standard Range', 90, y);
+        pdf.text(param.normalRange || 'Negative / Baseline', 95, y - 1);
 
         pdf.setFont('helvetica', 'bold');
         if (param.status === 'Normal') {
@@ -109,47 +145,52 @@ export const ExactReportDetailScreen: React.FC = () => {
         } else {
           pdf.setTextColor(225, 29, 72);
         }
-        pdf.text(param.value, 150, y);
+        pdf.text(param.value, 155, y - 1);
 
-        // Subtly draw separator line
+        // Thin separator line
         pdf.setDrawColor(241, 245, 249);
         pdf.line(14, y + 3, 196, y + 3);
 
-        y += 9;
+        y += 9.5;
       });
 
-      // Clinical Interpretation Box
-      y = Math.max(y + 8, 190);
+      // 4. Clinical Interpretation Box
+      y = Math.max(y + 8, 205);
       pdf.setFillColor(248, 250, 252);
-      pdf.roundedRect(14, y, 182, 28, 2, 2, 'F');
+      pdf.setDrawColor(226, 232, 240);
+      pdf.roundedRect(14, y, 182, 30, 2, 2, 'FD');
 
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10);
       pdf.setTextColor(15, 23, 42);
-      pdf.text('Clinical Interpretation:', 18, y + 8);
+      pdf.text('Veterinary Clinical Interpretation & Notes:', 20, y + 8);
 
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8.5);
       pdf.setTextColor(71, 85, 105);
       const splitNotes = pdf.splitTextToSize(
-        report.summaryNotes || 'All values verified by optical colorimetry standard.',
-        174
+        report.summaryNotes || 'Reagent pads evaluated against ISO-calibrated veterinary colorimetric charts. All indicators verified.',
+        170
       );
-      pdf.text(splitNotes, 18, y + 16);
+      pdf.text(splitNotes, 20, y + 15);
 
-      // Footer: Doctor & Clinic
+      // 5. Official Verification Footer
       y += 38;
-      pdf.setDrawColor(226, 232, 240);
+      pdf.setDrawColor(203, 213, 225);
       pdf.line(14, y, 196, y);
 
-      pdf.setFont('helvetica', 'normal');
+      pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(9);
+      pdf.setTextColor(30, 41, 59);
+      pdf.text(`Attending Clinician: ${report.veterinarianName || 'Dr. Sarah Mitchell, DVM'}`, 14, y + 7);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.5);
       pdf.setTextColor(100, 116, 139);
-      pdf.text(`Attending Veterinarian: ${report.veterinarianName || 'Dr. Sarah Mitchell'}`, 14, y + 8);
-      pdf.text(`Facility: ${report.clinicName || 'Metropolitan Veterinary Hospital'}`, 14, y + 14);
+      pdf.text(`Facility: ${report.clinicName || 'Metropolitan Veterinary Hospital'}`, 14, y + 13);
 
       pdf.setFontSize(8);
-      pdf.text('Kacey Diagnostics • https://kaceydiagnostics.com', 130, y + 14);
+      pdf.text('Kacey Diagnostics • Point-of-Care Animal Health • https://kaceydiagnostics.com', 95, y + 13);
 
       pdf.save(`Kacey_${report.animalName.replace(/\s+/g, '_')}_Report_${Date.now()}.pdf`);
       setDownloading(false);

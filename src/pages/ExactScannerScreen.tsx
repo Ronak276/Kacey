@@ -285,8 +285,8 @@ export const ExactScannerScreen: React.FC = () => {
           {/* Bottom-Right Corner */}
           <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-[3.5px] border-r-[3.5px] border-white/90 rounded-br-[22px] shadow-sm"></div>
 
-          {/* Animated Laser Scan Sweep Line */}
-          {scanning && (
+          {/* Animated Laser Scan Sweep Line: Active only when aiming BEFORE photo click */}
+          {scanning && !freezeFrame && (
             <div className="absolute inset-x-2 h-1 bg-gradient-to-r from-transparent via-cyan-300 to-transparent shadow-[0_0_16px_#38bdf8] animate-laser"></div>
           )}
         </div>
