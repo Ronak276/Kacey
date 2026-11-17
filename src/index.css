@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background: linear-gradient(135deg, #f0f7ff 0%, #e2eefb 50%, #f4f9ff 100%);
+    color: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Elegant Slow Bottom-to-Top Transition */
+@keyframes smooth-bottom-to-top {
+  0% {
+    opacity: 0;
+    transform: translateY(45px);
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-bottom-up-transition {
+  animation: smooth-bottom-to-top 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Staggered Content entrance */
+@keyframes content-stagger-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-stagger-1 {
+  animation: content-stagger-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.08s backwards;
+}
+
+.animate-stagger-2 {
+  animation: content-stagger-rise 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.16s backwards;
+}
+
+.animate-stagger-3 {
+  animation: content-stagger-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.24s backwards;
+}
+
+/* General Screen Horizontal Slide */
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.screen-transition {
+  animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scanner Laser animation */
+@keyframes laser-sweep {
+  0% {
+    top: 5%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 5%;
+    opacity: 0.8;
+  }
+}
+
+.animate-laser {
+  animation: laser-sweep 2.2s ease-in-out infinite;
+}
