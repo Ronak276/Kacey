@@ -1,14 +1,19 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
-    background: linear-gradient(135deg, #f0f7ff 0%, #e2eefb 50%, #f4f9ff 100%);
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    background: #ffffff;
     color: #0f172a;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif;
     -webkit-font-smoothing: antialiased;
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
   }
 }
 

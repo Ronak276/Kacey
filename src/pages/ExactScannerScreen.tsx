@@ -4,7 +4,8 @@ import {
   Zap,
   Image as GalleryIcon,
   Sparkles,
-  Camera
+  Camera,
+  AlertCircle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +24,7 @@ export const ExactScannerScreen: React.FC = () => {
   const [flash, setFlash] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanStep, setScanStep] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Hidden file input for uploading from device gallery
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,43 +67,58 @@ export const ExactScannerScreen: React.FC = () => {
 
   const executeAnalysis = async (base64Img: string) => {
     setScanning(true);
-    setScanStep('Aligning test strip...');
-    await new Promise((r) => setTimeout(r, 400));
+    setErrorMessage(null);
+    setScanStep('Detecting test strip with Gemini Vision...');
 
-    setScanStep('Analyzing colorimetric pads with Gemini AI...');
+    try {
+      const result = await analyzeTestStripWithGemini(base64Img, 'Veti-Stx 9 Urinalysis');
 
-    const result = await analyzeTestStripWithGemini(base64Img, 'Veti-Stx 9 Urinalysis');
+      // Check if image was rejected (not a test strip)
+      if (!result.isTestStrip) {
+        setScanning(false);
+        setErrorMessage(
+          result.rejectionReason || 'No medical test strip detected. Please align a test strip.'
+        );
+        return;
+      }
 
-    const newTest: DiagnosticTest = {
-      id: `test-${Date.now()}`,
-      animalId: currentPatient.id,
-      animalName: currentPatient.name,
-      animalBreed: currentPatient.breed,
-      animalPhoto: currentPatient.photoUrl,
-      testCategory: result.testCategory,
-      testName: result.testName,
-      timestamp:
-        new Date().toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }) +
-        ' • ' +
-        new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      overallStatus: result.overallStatus,
-      summaryNotes: result.summaryNotes,
-      veterinarianName: 'Dr. Sarah Mitchell',
-      clinicName: 'Metropolitan Veterinary Hospital',
-      parameters: result.parameters,
-      stripPads: result.stripPads,
-      capturedImageUrl: base64Img,
-    };
+      setScanStep('Extracting colorimetric pad values...');
+      await new Promise((r) => setTimeout(r, 300));
 
-    setCurrentTestResult(newTest);
-    addTestResult(newTest);
+      const newTest: DiagnosticTest = {
+        id: `test-${Date.now()}`,
+        animalId: currentPatient.id,
+        animalName: currentPatient.name,
+        animalBreed: currentPatient.breed,
+        animalPhoto: currentPatient.photoUrl,
+        testCategory: result.testCategory || 'Urine',
+        testName: result.testName || 'Veti-Stx 9 Urinalysis',
+        timestamp:
+          new Date().toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }) +
+          ' • ' +
+          new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        overallStatus: result.overallStatus || 'Normal',
+        summaryNotes: result.summaryNotes || 'Analysis completed successfully.',
+        veterinarianName: 'Dr. Sarah Mitchell',
+        clinicName: 'Metropolitan Veterinary Hospital',
+        parameters: result.parameters || [],
+        stripPads: result.stripPads || [],
+        capturedImageUrl: base64Img,
+      };
 
-    setScanning(false);
-    setActiveTab('results');
+      setCurrentTestResult(newTest);
+      addTestResult(newTest);
+
+      setScanning(false);
+      setActiveTab('results');
+    } catch (err: any) {
+      setScanning(false);
+      setErrorMessage(err.message || 'Error communicating with Gemini Vision API.');
+    }
   };
 
   // Capture frame directly from live camera feed
@@ -219,17 +236,38 @@ export const ExactScannerScreen: React.FC = () => {
           )}
         </div>
 
-        {/* Toast Scanner Status */}
+        {/* Toast Scanner Status & Error Alerts */}
         <AnimatePresence>
           {scanning && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="absolute bottom-4 z-30 px-4 py-2 rounded-full bg-slate-900/95 border border-sky-400/50 backdrop-blur-md shadow-2xl flex items-center gap-2 text-xs font-bold text-sky-300"
+              className="absolute bottom-4 z-30 px-4 py-2.5 rounded-full bg-slate-900/95 border border-sky-400/50 backdrop-blur-md shadow-2xl flex items-center gap-2 text-xs font-bold text-sky-300 max-w-[90%] text-center"
             >
-              <Sparkles className="w-4 h-4 text-sky-400 animate-spin" />
+              <Sparkles className="w-4 h-4 text-sky-400 animate-spin shrink-0" />
               <span>{scanStep}</span>
+            </motion.div>
+          )}
+
+          {errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.95 }}
+              className="absolute bottom-4 z-30 px-4 py-2.5 rounded-2xl bg-rose-950/95 border border-rose-500/60 backdrop-blur-md shadow-2xl flex items-center gap-2.5 text-xs font-semibold text-rose-200 max-w-[90%]"
+            >
+              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+              <div className="flex-1 text-left">
+                <p className="font-bold text-white text-[11px]">Scan Rejected</p>
+                <p className="text-[10px] leading-tight text-rose-200 mt-0.5">{errorMessage}</p>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-white/60 hover:text-white p-1 text-xs font-bold ml-1 cursor-pointer"
+              >
+                ✕
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
