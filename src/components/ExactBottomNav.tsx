@@ -18,20 +18,17 @@ export const ExactBottomNav: React.FC = () => {
   };
 
   return (
-    <div className="absolute bottom-3 inset-x-0 px-4 z-40 pointer-events-none">
+    <div className="absolute bottom-5 inset-x-0 px-4 z-40 pointer-events-none pb-[env(safe-area-inset-bottom,0px)]">
       {/* Floating Modern Capsule Bar */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 260 }}
-        className="w-full max-w-[340px] mx-auto bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-[32px] px-3 py-2 shadow-[0_12px_36px_rgba(0,112,210,0.12),0_4px_12px_rgba(0,0,0,0.06)] pointer-events-auto flex items-center justify-between relative"
+      <div
+        className="w-full max-w-[340px] mx-auto bg-white/98 backdrop-blur-xl border border-slate-200/90 rounded-[32px] px-3 py-1.5 shadow-[0_10px_30px_rgba(0,112,210,0.14),0_2px_8px_rgba(0,0,0,0.06)] pointer-events-auto flex items-center justify-between relative"
       >
         {/* Left Side: Home & Animals */}
         <div className="flex items-center gap-1">
           {/* Home Tab */}
           <button
             onClick={() => setActiveTab('home')}
-            className={`flex flex-col items-center justify-center w-14 h-12 rounded-2xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center w-14 h-11 rounded-2xl transition-all cursor-pointer ${
               isCurrentActive('home')
                 ? 'text-[#0070d2] bg-sky-50/80 font-black'
                 : 'text-slate-400 hover:text-slate-600 font-semibold'
@@ -44,7 +41,7 @@ export const ExactBottomNav: React.FC = () => {
           {/* Animals Tab */}
           <button
             onClick={() => setActiveTab('animals')}
-            className={`flex flex-col items-center justify-center w-14 h-12 rounded-2xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center w-14 h-11 rounded-2xl transition-all cursor-pointer ${
               isCurrentActive('animals')
                 ? 'text-[#0070d2] bg-sky-50/80 font-black'
                 : 'text-slate-400 hover:text-slate-600 font-semibold'
@@ -67,7 +64,7 @@ export const ExactBottomNav: React.FC = () => {
         <div className="relative -mt-6 flex flex-col items-center">
           <button
             onClick={() => setActiveTab('scanner')}
-            className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#006ee6] via-[#0086ff] to-[#38bdf8] text-white p-1 shadow-[0_8px_20px_rgba(0,112,210,0.4)] hover:shadow-[0_10px_24px_rgba(0,112,210,0.55)] active:scale-95 transition-all cursor-pointer flex items-center justify-center border-[3.5px] border-white group"
+            className="w-13 h-13 rounded-full bg-gradient-to-tr from-[#006ee6] via-[#0086ff] to-[#38bdf8] text-white p-1 shadow-[0_8px_20px_rgba(0,112,210,0.4)] hover:shadow-[0_10px_24px_rgba(0,112,210,0.55)] active:scale-95 transition-all cursor-pointer flex items-center justify-center border-[3px] border-white group"
             title="Scan Reagent Strip"
           >
             <Scan className="w-6 h-6 stroke-[2.5] group-hover:scale-110 transition-transform" />
@@ -80,7 +77,7 @@ export const ExactBottomNav: React.FC = () => {
           {/* History Tab */}
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex flex-col items-center justify-center w-14 h-12 rounded-2xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center w-14 h-11 rounded-2xl transition-all cursor-pointer ${
               isCurrentActive('history')
                 ? 'text-[#0070d2] bg-sky-50/80 font-black'
                 : 'text-slate-400 hover:text-slate-600 font-semibold'
@@ -93,7 +90,7 @@ export const ExactBottomNav: React.FC = () => {
           {/* Profile Tab */}
           <button
             onClick={() => setActiveTab('profile')}
-            className={`flex flex-col items-center justify-center w-14 h-12 rounded-2xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center w-14 h-11 rounded-2xl transition-all cursor-pointer ${
               isCurrentActive('profile')
                 ? 'text-[#0070d2] bg-sky-50/80 font-black'
                 : 'text-slate-400 hover:text-slate-600 font-semibold'
@@ -103,10 +100,7 @@ export const ExactBottomNav: React.FC = () => {
             <span className="text-[10px] mt-0.5 leading-none">Profile</span>
           </button>
         </div>
-      </motion.div>
-
-      {/* iOS Home Indicator Bar */}
-      <div className="w-28 h-1 bg-slate-900/25 rounded-full mx-auto mt-2"></div>
+      </div>
     </div>
   );
 };

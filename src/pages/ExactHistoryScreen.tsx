@@ -13,26 +13,17 @@ import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 
 const containerVariants: Variants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.03,
-    },
   },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 1, y: 0 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      type: 'spring' as const,
-      damping: 24,
-      stiffness: 240,
-    },
   },
 };
 

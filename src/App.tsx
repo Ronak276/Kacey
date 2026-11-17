@@ -85,10 +85,9 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full md:bg-gradient-to-br md:from-[#f0f6ff] md:via-[#e2edfc] md:to-[#edf4fc] bg-white flex flex-col items-center justify-center p-0 md:p-6 select-none font-sans overflow-x-hidden">
-      {/* Mobile Device Frame: Uniform height & layout on both mobile and desktop view */}
-      {/* Device / App Canvas Container */}
-      <div className="relative w-full h-[100dvh] md:h-[844px] md:max-w-[390px] mx-auto bg-white md:rounded-[48px] overflow-hidden md:shadow-[0_25px_60px_rgba(0,0,0,0.25),0_0_0_10px_#0f172a,0_0_0_12px_#334155] md:border-[3px] md:border-black flex flex-col">
+    <div className="h-[100dvh] w-full md:min-h-screen md:w-full md:bg-gradient-to-br md:from-[#f0f6ff] md:via-[#e2edfc] md:to-[#edf4fc] bg-white flex flex-col items-center justify-start md:justify-center p-0 md:p-6 select-none font-sans overflow-hidden">
+      {/* Mobile Device Frame: Zero top gap on mobile, exact native viewport */}
+      <div className="relative w-full h-full md:h-[844px] md:max-w-[390px] mx-auto bg-white md:rounded-[48px] overflow-hidden md:shadow-[0_25px_60px_rgba(0,0,0,0.25),0_0_0_10px_#0f172a,0_0_0_12px_#334155] md:border-[3px] md:border-black flex flex-col">
         {/* iOS Top Status Bar (9:41) with Speaker Notch - ONLY visible on Desktop Mockup frame (md:flex), completely HIDDEN on real mobile */}
         <div
           className={`hidden md:flex relative w-full pt-3 px-6 pb-1 items-center justify-between text-[13px] font-semibold z-50 select-none shrink-0 ${
@@ -110,7 +109,7 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Live Screen Content - Fully native & responsive */}
+        {/* Live Screen Content - Fully native & fixed layout */}
         <div className="flex-1 w-full h-full overflow-hidden relative flex flex-col bg-white">
           {renderCurrentContent()}
 

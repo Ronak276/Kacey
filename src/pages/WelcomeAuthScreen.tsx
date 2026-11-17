@@ -11,7 +11,7 @@ export const WelcomeAuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-between overflow-hidden select-none bg-white font-sans screen-transition">
+    <div className="relative w-full h-full flex flex-col justify-between overflow-hidden select-none bg-[#f3f9fe] font-sans">
       {/* Background illustration */}
       <img
         src="/assets/user_perfect_bg.jpg"
@@ -23,7 +23,7 @@ export const WelcomeAuthScreen: React.FC = () => {
       <div className="relative z-10 w-full flex-1"></div>
 
       {/* Action Buttons Zone */}
-      <div className="relative z-20 pb-5 px-7 flex flex-col items-center gap-2.5">
+      <div className="relative z-20 pb-6 px-7 flex flex-col items-center gap-2.5">
         {/* Solid Blue Button: Sign In -> (Directly goes to Home Dashboard) */}
         <button
           onClick={handleDirectAccess}
@@ -45,9 +45,6 @@ export const WelcomeAuthScreen: React.FC = () => {
         <p className="text-[11px] font-medium text-slate-500 mt-0.5">
           Trusted by Veterinarians Since 1979
         </p>
-
-        {/* iOS Home Indicator Bar */}
-        <div className="w-32 h-1 bg-slate-900/30 rounded-full mx-auto mt-0.5"></div>
       </div>
     </div>
   );
