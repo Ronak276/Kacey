@@ -62,16 +62,19 @@ export async function analyzeTestStripWithGemini(
 
   const prompt = `
 You are an expert Veterinary Diagnostic Reagent Test Strip Optical Analyzer for Kacey Diagnostics.
-You must examine the provided image carefully.
+Examine the provided image carefully.
+
+NOTE ON IMAGE SOURCE:
+The user might photograph a physical reagent test strip OR photograph a test strip displayed on another mobile phone screen, tablet, or monitor. Accept both! Screen glares or slight moiré patterns from photographing another phone should be tolerated as long as colored rectangular reagent pads are visible.
 
 CRITICAL FIRST TASK - STRIP VALIDATION:
-Check if this image clearly depicts a rectangular diagnostic reagent test strip (with colored test pads along a narrow plastic/paper strip) intended for medical or veterinary testing (e.g., urinalysis, toxic screen, pH, ethylene glycol).
+Check if this image depicts a veterinary or medical diagnostic reagent strip (a narrow strip containing colored chemical reagent pads arranged sequentially).
 
-IF THE IMAGE IS NOT A REAGENT TEST STRIP (for example: a pet, a person, a selfie, furniture, a desk, a document, food, room, or blank photo):
-Return IMMEDIATELY this exact JSON:
+IF THE IMAGE IS DEFINITELY NOT A REAGENT STRIP (e.g. human face, pet portrait, car, chair, wall, food, empty room, or completely black image):
+Return this JSON:
 {
   "isTestStrip": false,
-  "rejectionReason": "No medical test strip detected. Please capture or upload a clear photo of an animal reagent test strip.",
+  "rejectionReason": "No medical test strip detected. Please align the test strip inside the viewfinder.",
   "testName": "Unknown",
   "testCategory": "Urine",
   "overallStatus": "Abnormal",
@@ -80,15 +83,15 @@ Return IMMEDIATELY this exact JSON:
   "parameters": []
 }
 
-IF IT IS A VALID TEST STRIP:
-Perform dynamic colorimetric analysis:
-1. Count the reagent pads arranged along the strip.
+IF A TEST STRIP IS PRESENT (either physical or on screen):
+Perform colorimetric analysis:
+1. Count each colored reagent pad arranged along the strip.
 2. For each pad from top to bottom:
    - Identify which chemical parameter it represents (e.g. Leukocytes, Nitrite, Urobilinogen, Protein, pH, Blood, Specific Gravity, Ketones, Bilirubin, Glucose, or Ethylene Glycol).
    - Detect the exact hexadecimal color of the pad (#RRGGBB).
-   - Determine the diagnostic value (e.g. "Negative", "15 mg/dL", "6.5", "1.020", "Trace", etc.).
-   - Classify each pad as "Normal", "Trace", "Positive", or "Abnormal".
-3. Formulate an overallStatus: "Normal" (if all values within healthy range), "Trace", "Positive", or "Abnormal" (if elevated or danger detected).
+   - Determine the diagnostic value (e.g. "Negative", "Trace", "15 mg/dL", "6.5", "1.025", "Positive").
+   - Classify as "Normal", "Trace", "Positive", or "Abnormal".
+3. Formulate overallStatus: "Normal" (if all baseline healthy), "Trace", "Positive", or "Abnormal" (if elevated or danger detected).
 4. Provide a professional clinical summary in summaryNotes.
 
 Respond ONLY with valid JSON matching this schema:
@@ -115,7 +118,7 @@ Respond ONLY with valid JSON matching this schema:
     }
   ]
 }
-Return pure JSON only. Do not include markdown ticks (\`\`\`), code blocks, or any conversation.
+Return pure JSON only. Do not include markdown ticks, backticks, or any explanation.
 `;
 
   const candidateModels = [

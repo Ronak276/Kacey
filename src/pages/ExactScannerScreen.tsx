@@ -25,6 +25,8 @@ export const ExactScannerScreen: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const [scanStep, setScanStep] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [freezeFrame, setFreezeFrame] = useState<string | null>(null);
+  const [shutterFlash, setShutterFlash] = useState<boolean>(false);
 
   // Hidden file input for uploading from device gallery
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,7 +70,7 @@ export const ExactScannerScreen: React.FC = () => {
   const executeAnalysis = async (base64Img: string) => {
     setScanning(true);
     setErrorMessage(null);
-    setScanStep('Detecting test strip with Gemini Vision...');
+    setScanStep('Snapshot captured! Analyzing with Gemini AI...');
 
     try {
       const result = await analyzeTestStripWithGemini(base64Img, 'Veti-Stx 9 Urinalysis');
@@ -76,6 +78,7 @@ export const ExactScannerScreen: React.FC = () => {
       // Check if image was rejected (not a test strip)
       if (!result.isTestStrip) {
         setScanning(false);
+        setFreezeFrame(null);
         setErrorMessage(
           result.rejectionReason || 'No medical test strip detected. Please align a test strip.'
         );
@@ -114,31 +117,42 @@ export const ExactScannerScreen: React.FC = () => {
       addTestResult(newTest);
 
       setScanning(false);
+      setFreezeFrame(null);
       setActiveTab('results');
     } catch (err: any) {
       setScanning(false);
+      setFreezeFrame(null);
       setErrorMessage(err.message || 'Error communicating with Gemini Vision API.');
     }
   };
 
-  // Capture frame directly from live camera feed
+  // Capture frame directly from live camera feed with instant shutter feedback
   const handleCapture = () => {
+    // 1. Trigger white shutter flash effect
+    setShutterFlash(true);
+    setTimeout(() => setShutterFlash(false), 150);
+
     if (videoRef.current && cameraActive && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      const vWidth = video.videoWidth || 1280;
+      const vHeight = video.videoHeight || 720;
+      canvas.width = vWidth;
+      canvas.height = vHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        // Freeze snapshot on screen immediately so user knows photo was clicked
+        setFreezeFrame(dataUrl);
         executeAnalysis(dataUrl);
         return;
       }
     }
 
     // Default sample strip if camera permission not granted
-    executeAnalysis('/assets/test_strip_real.png');
+    setFreezeFrame('/assets/strip_sample_normal.jpg');
+    executeAnalysis('/assets/strip_sample_normal.jpg');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,6 +225,20 @@ export const ExactScannerScreen: React.FC = () => {
             cameraActive ? 'opacity-100' : 'opacity-0'
           }`}
         />
+
+        {/* Instant Freeze-Frame Snapshot preview upon shutter press */}
+        {freezeFrame && (
+          <img
+            src={freezeFrame}
+            alt="Captured Test Strip Frame"
+            className="absolute inset-0 w-full h-full object-cover z-10"
+          />
+        )}
+
+        {/* Shutter White Flash Effect */}
+        {shutterFlash && (
+          <div className="absolute inset-0 bg-white z-40 transition-opacity duration-150 pointer-events-none" />
+        )}
 
         {/* Ambient Dark Surface Backdrop when camera is preparing */}
         {!cameraActive && (
