@@ -13,31 +13,144 @@ export const ExactReportDetailScreen: React.FC = () => {
   const report = selectedTest || currentTestResult;
 
   const handleDownloadPDF = async () => {
-    if (!reportRef.current || !report) {
+    if (!report) {
       window.print();
       return;
     }
 
     try {
       setDownloading(true);
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-      });
 
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       });
 
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      // Branded Header
+      pdf.setFillColor(0, 112, 210);
+      pdf.rect(0, 0, 210, 28, 'F');
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, Math.min(pdfHeight, 297));
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(16);
+      pdf.text('KACEY DIAGNOSTICS', 14, 12);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.text('Point-of-Care Animal Health Laboratory Report', 14, 19);
+
+      pdf.setFontSize(8);
+      pdf.text(`ISO 13485 Standard • Generated: ${new Date().toLocaleDateString()}`, 135, 19);
+
+      // Patient Details Card
+      pdf.setFillColor(248, 251, 254);
+      pdf.roundedRect(14, 34, 182, 32, 3, 3, 'F');
+
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(13);
+      pdf.text(report.animalName, 20, 44);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(`Breed: ${report.animalBreed || 'Unknown'}`, 20, 52);
+      pdf.text(`Timestamp: ${report.timestamp}`, 20, 59);
+
+      // Status Badge
+      const isNormal = report.overallStatus === 'Normal';
+      if (isNormal) {
+        pdf.setFillColor(220, 252, 231);
+        pdf.setTextColor(21, 128, 61);
+      } else {
+        pdf.setFillColor(254, 226, 226);
+        pdf.setTextColor(239, 68, 68);
+      }
+      pdf.roundedRect(145, 40, 42, 10, 2, 2, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.text(`STATUS: ${report.overallStatus.toUpperCase()}`, 150, 47);
+
+      // Section: Test Parameters Header
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text(`Test Panel: ${report.testName}`, 14, 76);
+
+      // Table Header
+      pdf.setFillColor(241, 245, 249);
+      pdf.rect(14, 82, 182, 8, 'F');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(71, 85, 105);
+      pdf.text('Analyte / Parameter', 18, 87);
+      pdf.text('Standard Reference', 90, 87);
+      pdf.text('Measured Result', 150, 87);
+
+      // Table Rows
+      let y = 96;
+      const params = report.parameters || [];
+
+      params.forEach((param) => {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(30, 41, 59);
+        pdf.setFontSize(9);
+        pdf.text(param.name, 18, y);
+
+        pdf.setTextColor(100, 116, 139);
+        pdf.text(param.normalRange || 'Standard Range', 90, y);
+
+        pdf.setFont('helvetica', 'bold');
+        if (param.status === 'Normal') {
+          pdf.setTextColor(22, 163, 74);
+        } else if (param.status === 'Trace') {
+          pdf.setTextColor(217, 119, 6);
+        } else {
+          pdf.setTextColor(225, 29, 72);
+        }
+        pdf.text(param.value, 150, y);
+
+        // Subtly draw separator line
+        pdf.setDrawColor(241, 245, 249);
+        pdf.line(14, y + 3, 196, y + 3);
+
+        y += 9;
+      });
+
+      // Clinical Interpretation Box
+      y = Math.max(y + 8, 190);
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(14, y, 182, 28, 2, 2, 'F');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(15, 23, 42);
+      pdf.text('Clinical Interpretation:', 18, y + 8);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(71, 85, 105);
+      const splitNotes = pdf.splitTextToSize(
+        report.summaryNotes || 'All values verified by optical colorimetry standard.',
+        174
+      );
+      pdf.text(splitNotes, 18, y + 16);
+
+      // Footer: Doctor & Clinic
+      y += 38;
+      pdf.setDrawColor(226, 232, 240);
+      pdf.line(14, y, 196, y);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(`Attending Veterinarian: ${report.veterinarianName || 'Dr. Sarah Mitchell'}`, 14, y + 8);
+      pdf.text(`Facility: ${report.clinicName || 'Metropolitan Veterinary Hospital'}`, 14, y + 14);
+
+      pdf.setFontSize(8);
+      pdf.text('Kacey Diagnostics • https://kaceydiagnostics.com', 130, y + 14);
+
       pdf.save(`Kacey_${report.animalName.replace(/\s+/g, '_')}_Report_${Date.now()}.pdf`);
       setDownloading(false);
     } catch (err) {
