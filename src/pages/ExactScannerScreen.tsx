@@ -20,6 +20,7 @@ export const ExactScannerScreen: React.FC = () => {
   // Camera & Stream states
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [flash, setFlash] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -30,6 +31,29 @@ export const ExactScannerScreen: React.FC = () => {
 
   // Hidden file input for uploading from device gallery
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Toggle real physical phone torch/flash via Web MediaStream Track API
+  const toggleFlash = async () => {
+    const nextState = !flash;
+    setFlash(nextState);
+
+    try {
+      const stream = streamRef.current;
+      if (stream) {
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          const capabilities = (videoTrack.getCapabilities && (videoTrack.getCapabilities() as any)) || {};
+          if (capabilities.torch) {
+            await (videoTrack as any).applyConstraints({
+              advanced: [{ torch: nextState }],
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Hardware torch not supported on this device/browser:', e);
+    }
+  };
 
   // Start live device camera stream cleanly
   useEffect(() => {
@@ -46,6 +70,8 @@ export const ExactScannerScreen: React.FC = () => {
             },
             audio: false,
           });
+
+          streamRef.current = stream;
 
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
@@ -64,6 +90,7 @@ export const ExactScannerScreen: React.FC = () => {
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
+      streamRef.current = null;
     };
   }, []);
 
@@ -194,11 +221,11 @@ export const ExactScannerScreen: React.FC = () => {
         <h1 className="text-[17px] font-black tracking-tight text-white">Scan Test Strip</h1>
 
         <button
-          onClick={() => setFlash(!flash)}
+          onClick={toggleFlash}
           className={`p-1 transition-colors cursor-pointer ${
             flash ? 'text-amber-400' : 'text-white hover:text-slate-300'
           }`}
-          title="Toggle Flash"
+          title="Toggle Flash / Torch"
         >
           <Zap className={`w-5 h-5 ${flash ? 'fill-current' : 'stroke-[2]'}`} />
         </button>
