@@ -8,6 +8,7 @@ import { ExactAnimalProfileScreen } from './pages/ExactAnimalProfileScreen';
 import { ExactHistoryScreen } from './pages/ExactHistoryScreen';
 import { ExactReportDetailScreen } from './pages/ExactReportDetailScreen';
 import { ExactSettingsScreen } from './pages/ExactSettingsScreen';
+import { ExactNotificationScreen } from './pages/ExactNotificationScreen';
 import { ExactBottomNav } from './components/ExactBottomNav';
 
 export const App: React.FC = () => {
@@ -68,6 +69,12 @@ export const App: React.FC = () => {
             <ExactSettingsScreen />
           </div>
         );
+      case 'notifications':
+        return (
+          <div key="notifications" className="w-full h-full screen-transition">
+            <ExactNotificationScreen />
+          </div>
+        );
       default:
         return (
           <div key="default" className="w-full h-full screen-transition">
@@ -78,12 +85,12 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0f6ff] via-[#e2edfc] to-[#edf4fc] flex flex-col items-center justify-center p-0 md:p-6 select-none font-sans">
-      {/* Mobile Device Frame with crisp black border */}
-      <div className="relative w-full max-w-[390px] h-[820px] bg-white md:rounded-[48px] overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.25),0_0_0_10px_#0f172a,0_0_0_12px_#334155] border-[3px] border-black flex flex-col">
+    <div className="min-h-screen w-full md:bg-gradient-to-br md:from-[#f0f6ff] md:via-[#e2edfc] md:to-[#edf4fc] bg-white flex flex-col items-center justify-center p-0 md:p-6 select-none font-sans overflow-x-hidden">
+      {/* Mobile Device Frame: Uniform height & layout on both mobile and desktop view */}
+      <div className="relative w-full h-[100dvh] md:h-[844px] max-w-[390px] mx-auto bg-white md:rounded-[48px] overflow-hidden md:shadow-[0_25px_60px_rgba(0,0,0,0.25),0_0_0_10px_#0f172a,0_0_0_12px_#334155] md:border-[3px] md:border-black flex flex-col">
         {/* iOS Top Status Bar (9:41) with Speaker Notch */}
         <div
-          className={`relative w-full pt-3 px-7 pb-1 flex items-center justify-between text-[13px] font-semibold z-50 select-none ${
+          className={`relative w-full pt-3 px-6 pb-1 flex items-center justify-between text-[13px] font-semibold z-50 select-none shrink-0 ${
             activeTab === 'scanner' && isLoggedIn ? 'text-white' : 'text-slate-900'
           }`}
         >

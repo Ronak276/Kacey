@@ -79,8 +79,9 @@ export const ExactDashboardScreen: React.FC = () => {
           {/* Notification Bell */}
           <div className="relative">
             <button
-              onClick={() => setActiveTab('history')}
+              onClick={() => setActiveTab('notifications')}
               className="p-1 cursor-pointer text-[#1e293b] hover:opacity-75"
+              title="Open Notifications"
             >
               <Bell className="w-5 h-5 stroke-[2.3] fill-slate-800 text-slate-800" />
               <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-[#ef4444] border-2 border-white"></span>

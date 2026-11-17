@@ -62,5 +62,5 @@ export interface VetProfile {
   language: string;
 }
 
-export type AppTab = 'home' | 'animals' | 'scanner' | 'history' | 'profile' | 'results' | 'animal-detail' | 'report-detail';
+export type AppTab = 'home' | 'animals' | 'scanner' | 'history' | 'profile' | 'results' | 'animal-detail' | 'report-detail' | 'notifications';
 

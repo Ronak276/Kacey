@@ -3,14 +3,8 @@ import {
   ChevronLeft,
   Zap,
   Image as GalleryIcon,
-  Play,
-  RotateCcw,
-  Clock,
   Sparkles,
-  Camera,
-  CheckCircle2,
-  AlertCircle,
-  Key
+  Camera
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,56 +16,61 @@ export const ExactScannerScreen: React.FC = () => {
 
   const currentPatient = selectedAnimal || animals[0];
 
-  // Strip products
-  const products = [
-    { id: 'p1', name: 'Veti-Stx 9 Urinalysis', waitTime: 60, pads: 9 },
-    { id: 'p2', name: 'EG-3 Antifreeze Screening', waitTime: 30, pads: 3 },
-    { id: 'p3', name: 'Veti-Screen 6 Toxicology', waitTime: 45, pads: 6 },
-  ];
-  const [selectedProduct, setSelectedProduct] = useState(products[0]);
-
-  // States
+  // Camera & Stream states
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [flash, setFlash] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanStep, setScanStep] = useState<string>('');
-  const [customKeyModal, setCustomKeyModal] = useState(false);
-  const [userGeminiKey, setUserGeminiKey] = useState('');
-
-  // Incubation reaction timer
-  const [timerSeconds, setTimerSeconds] = useState(selectedProduct.waitTime);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   // Hidden file input for uploading from device gallery
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Start live device camera stream cleanly
   useEffect(() => {
-    setTimerSeconds(selectedProduct.waitTime);
-    setIsTimerRunning(false);
-  }, [selectedProduct]);
+    let stream: MediaStream | null = null;
 
-  useEffect(() => {
-    let interval: any;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev - 1);
-      }, 1000);
-    } else if (timerSeconds === 0) {
-      setIsTimerRunning(false);
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds]);
+    const startCamera = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          });
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play();
+            setCameraActive(true);
+          }
+        }
+      } catch (err: any) {
+        setCameraActive(false);
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
 
   const executeAnalysis = async (base64Img: string) => {
     setScanning(true);
-    setScanStep('Aligning optical sensor...');
+    setScanStep('Aligning test strip...');
     await new Promise((r) => setTimeout(r, 400));
 
-    setScanStep('Detecting reagent color pads...');
-    await new Promise((r) => setTimeout(r, 400));
+    setScanStep('Analyzing colorimetric pads with Gemini AI...');
 
-    setScanStep('Analyzing with Gemini AI Vision...');
-
-    const result = await analyzeTestStripWithGemini(base64Img, selectedProduct.name, userGeminiKey);
+    const result = await analyzeTestStripWithGemini(base64Img, 'Veti-Stx 9 Urinalysis');
 
     const newTest: DiagnosticTest = {
       id: `test-${Date.now()}`,
@@ -81,11 +80,14 @@ export const ExactScannerScreen: React.FC = () => {
       animalPhoto: currentPatient.photoUrl,
       testCategory: result.testCategory,
       testName: result.testName,
-      timestamp: new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }) + ' • ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      timestamp:
+        new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }) +
+        ' • ' +
+        new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       overallStatus: result.overallStatus,
       summaryNotes: result.summaryNotes,
       veterinarianName: 'Dr. Sarah Mitchell',
@@ -102,7 +104,23 @@ export const ExactScannerScreen: React.FC = () => {
     setActiveTab('results');
   };
 
+  // Capture frame directly from live camera feed
   const handleCapture = () => {
+    if (videoRef.current && cameraActive && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        executeAnalysis(dataUrl);
+        return;
+      }
+    }
+
+    // Default sample strip if camera permission not granted
     executeAnalysis('/assets/test_strip_real.png');
   };
 
@@ -120,8 +138,8 @@ export const ExactScannerScreen: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-[#0b1324] text-white overflow-hidden select-none font-sans">
-      {/* Hidden file picker */}
+    <div className="relative w-full h-full flex flex-col justify-between bg-slate-950 text-white overflow-hidden select-none font-sans">
+      {/* Hidden file picker & capture canvas */}
       <input
         ref={fileInputRef}
         type="file"
@@ -129,139 +147,86 @@ export const ExactScannerScreen: React.FC = () => {
         className="hidden"
         onChange={handleFileChange}
       />
+      <canvas ref={canvasRef} className="hidden" />
 
       {/* ======================================================== */}
-      {/* 1. TOP HEADER: Back | Title | Flash & API Key Buttons */}
+      {/* 1. TOP HEADER: Exact minimal Screen 3 */}
       {/* ======================================================== */}
-      <div className="relative z-30 flex items-center justify-between px-5 pt-3 pb-2 bg-gradient-to-b from-[#0b1324] to-transparent">
+      <div className="relative z-30 flex items-center justify-between px-5 pt-3 pb-2">
         <button
           onClick={() => setActiveTab('home')}
-          className="text-white/80 hover:text-white p-1 rounded-full cursor-pointer transition-colors"
+          className="text-white hover:text-slate-300 p-1 cursor-pointer transition-colors"
         >
           <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
         </button>
 
-        <div className="text-center">
-          <h1 className="text-[16px] font-black tracking-tight text-white">Scan Test Strip</h1>
-          <p className="text-[10px] text-sky-400 font-bold">
-            Patient: {currentPatient.name} ({currentPatient.breed})
-          </p>
-        </div>
+        <h1 className="text-[17px] font-black tracking-tight text-white">Scan Test Strip</h1>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setCustomKeyModal(true)}
-            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
-              userGeminiKey ? 'text-emerald-400 bg-emerald-400/20' : 'text-white/60 hover:text-white'
-            }`}
-            title="Configure Gemini AI Key"
-          >
-            <Key className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={() => setFlash(!flash)}
-            className={`p-1.5 rounded-full transition-all cursor-pointer ${
-              flash ? 'text-amber-400 bg-amber-400/20' : 'text-white/80 hover:text-white'
-            }`}
-            title="Toggle Flash"
-          >
-            <Zap className={`w-4 h-4 ${flash ? 'fill-current' : 'stroke-[2.5]'}`} />
-          </button>
-        </div>
+        <button
+          onClick={() => setFlash(!flash)}
+          className={`p-1 transition-colors cursor-pointer ${
+            flash ? 'text-amber-400' : 'text-white hover:text-slate-300'
+          }`}
+          title="Toggle Flash"
+        >
+          <Zap className={`w-5 h-5 ${flash ? 'fill-current' : 'stroke-[2]'}`} />
+        </button>
       </div>
 
-      {/* Product Strip Selector Pills */}
-      <div className="relative z-30 px-4 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        {products.map((p) => {
-          const isSelected = selectedProduct.id === p.id;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setSelectedProduct(p)}
-              className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
-                isSelected
-                  ? 'bg-[#0086ff] text-white shadow-sm shadow-sky-500/30'
-                  : 'bg-white/10 hover:bg-white/15 text-slate-300 border border-white/10'
-              }`}
-            >
-              {p.name.split(' ')[0]} ({p.waitTime}s)
-            </button>
-          );
-        })}
+      {/* Guidance Subtitle */}
+      <div className="relative z-20 text-center px-6 -mt-1">
+        <p className="text-[13px] text-white/90 font-medium leading-snug">
+          Place the test strip in the frame<br />and make sure it's well lit.
+        </p>
       </div>
-
-      {/* Reaction Countdown Timer Bar */}
-      <div className="relative z-20 px-5 py-1.5 flex items-center justify-between text-xs bg-white/5 border-y border-white/10 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-sky-400" />
-          <span className="text-[11px] font-medium text-slate-300">
-            Incubation: <strong className="text-white font-bold">{timerSeconds}s remaining</strong>
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setIsTimerRunning(!isTimerRunning)}
-            className="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 text-[10px] font-bold hover:bg-sky-500/30 transition-colors cursor-pointer"
-          >
-            {isTimerRunning ? 'Pause' : 'Start Timer'}
-          </button>
-          <button
-            onClick={() => {
-              setIsTimerRunning(false);
-              setTimerSeconds(selectedProduct.waitTime);
-            }}
-            className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-
-      {/* Subtitle guidance text matching Screen 3 */}
-      <p className="text-center text-xs text-slate-300 px-6 pt-2 pb-1">
-        Place the test strip in the frame<br />and make sure it's well lit.
-      </p>
 
       {/* ======================================================== */}
-      {/* 2. CENTER VIEWFINDER: Reticle & Scanning Animation */}
+      {/* 2. REAL CAMERA VIEWFINDER: CLEAN MINIMAL RETICLE (Screen 3) */}
       {/* ======================================================== */}
       <div className="relative flex-1 flex items-center justify-center overflow-hidden my-auto px-6">
-        {/* Real photo background: Wood grain table with calibrated reagent test strip */}
-        <div className="absolute inset-0 w-full h-full">
-          <img
-            src="/assets/scanner_wood_strip_bg.png"
-            alt="Reagent strip on surface"
-            className="w-full h-full object-cover object-center filter brightness-90 contrast-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0b1324]/50 via-transparent to-[#0b1324]/70 pointer-events-none"></div>
-        </div>
+        {/* Real Live Camera Video Stream */}
+        <video
+          ref={videoRef}
+          playsInline
+          autoPlay
+          muted
+          className={`absolute inset-0 w-full h-full object-cover ${
+            cameraActive ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
 
-        {/* Viewfinder Bounding Reticle (Exact 4 Curved White Corners) */}
-        <div className="relative w-[215px] h-[260px] pointer-events-none z-20 flex items-center justify-center">
+        {/* Ambient Dark Surface Backdrop when camera is preparing */}
+        {!cameraActive && (
+          <div className="absolute inset-0 bg-stone-900/90 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] flex items-center justify-center">
+            <Camera className="w-10 h-10 text-slate-700 animate-pulse" />
+          </div>
+        )}
+
+        {/* Minimal Exact 4-Corner Viewfinder Reticle (Screen 3) */}
+        <div className="relative w-[220px] h-[280px] pointer-events-none z-20 flex items-center justify-center">
           {/* Top-Left Corner */}
-          <div className="absolute -top-1 -left-1 w-9 h-9 border-t-[3.5px] border-l-[3.5px] border-white rounded-tl-[24px] shadow-sm"></div>
+          <div className="absolute -top-1 -left-1 w-8 h-8 border-t-[3.5px] border-l-[3.5px] border-white/90 rounded-tl-[22px] shadow-sm"></div>
           {/* Top-Right Corner */}
-          <div className="absolute -top-1 -right-1 w-9 h-9 border-t-[3.5px] border-r-[3.5px] border-white rounded-tr-[24px] shadow-sm"></div>
+          <div className="absolute -top-1 -right-1 w-8 h-8 border-t-[3.5px] border-r-[3.5px] border-white/90 rounded-tr-[22px] shadow-sm"></div>
           {/* Bottom-Left Corner */}
-          <div className="absolute -bottom-1 -left-1 w-9 h-9 border-b-[3.5px] border-l-[3.5px] border-white rounded-bl-[24px] shadow-sm"></div>
+          <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-[3.5px] border-l-[3.5px] border-white/90 rounded-bl-[22px] shadow-sm"></div>
           {/* Bottom-Right Corner */}
-          <div className="absolute -bottom-1 -right-1 w-9 h-9 border-b-[3.5px] border-r-[3.5px] border-white rounded-br-[24px] shadow-sm"></div>
+          <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-[3.5px] border-r-[3.5px] border-white/90 rounded-br-[22px] shadow-sm"></div>
 
-          {/* Glowing Animated Laser Scan Sweep Line */}
+          {/* Animated Laser Scan Sweep Line */}
           {scanning && (
             <div className="absolute inset-x-2 h-1 bg-gradient-to-r from-transparent via-cyan-300 to-transparent shadow-[0_0_16px_#38bdf8] animate-laser"></div>
           )}
         </div>
 
-        {/* Real-time processing toast banner */}
+        {/* Toast Scanner Status */}
         <AnimatePresence>
           {scanning && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="absolute bottom-6 z-30 px-4 py-2 rounded-full bg-slate-900/90 border border-sky-400/40 backdrop-blur-md shadow-2xl flex items-center gap-2 text-xs font-bold text-sky-300"
+              className="absolute bottom-4 z-30 px-4 py-2 rounded-full bg-slate-900/95 border border-sky-400/50 backdrop-blur-md shadow-2xl flex items-center gap-2 text-xs font-bold text-sky-300"
             >
               <Sparkles className="w-4 h-4 text-sky-400 animate-spin" />
               <span>{scanStep}</span>
@@ -271,113 +236,46 @@ export const ExactScannerScreen: React.FC = () => {
       </div>
 
       {/* ======================================================== */}
-      {/* 3. BOTTOM CONTROLS & SUPPORTED TESTS TILE */}
+      {/* 3. BOTTOM CONTROLS & SUPPORTED TESTS TILE (Screen 3 Exact) */}
       {/* ======================================================== */}
-      <div className="relative z-30 flex flex-col items-center bg-gradient-to-t from-[#0b1324] via-[#0b1324]/95 to-transparent pt-2 pb-3">
-        {/* Shutter & Gallery Controls */}
-        <div className="w-full px-8 flex items-center justify-between mb-2.5">
-          {/* Upload Button: opens native photo gallery */}
+      <div className="relative z-30 flex flex-col items-center pb-4 pt-1">
+        {/* Controls row: Gallery button on left | Centered Shutter */}
+        <div className="w-full px-10 flex items-center justify-between mb-3.5">
+          {/* Gallery Button: Exact rounded square from reference */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all cursor-pointer shadow-md"
+            className="w-12 h-12 rounded-[18px] bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center border border-white/15 transition-all cursor-pointer shadow-md"
             title="Upload photo from phone gallery"
           >
             <GalleryIcon className="w-5 h-5 stroke-[2]" />
           </button>
 
-          {/* Electric Blue Shutter Button with White Ring */}
+          {/* Electric Blue Shutter Button with White Ring (Screen 3 Exact) */}
           <button
             onClick={handleCapture}
             disabled={scanning}
-            className="w-[66px] h-[66px] rounded-full p-[4px] bg-white shadow-2xl active:scale-90 transition-transform cursor-pointer flex items-center justify-center"
+            className="w-[70px] h-[70px] rounded-full p-[4px] bg-white shadow-2xl active:scale-90 transition-transform cursor-pointer flex items-center justify-center -ml-2"
             title="Capture Test Strip"
           >
             <div className="w-full h-full rounded-full bg-[#0086ff] hover:bg-[#0070d2] transition-colors shadow-inner flex items-center justify-center">
-              <div className="w-5 h-5 rounded-full border-2 border-white/50"></div>
+              <div className="w-5 h-5 rounded-full border-2 border-white/60"></div>
             </div>
           </button>
 
-          {/* Symmetric Spacer */}
-          <div className="w-11 h-11"></div>
+          {/* Symmetrical placeholder for balance */}
+          <div className="w-12 h-12"></div>
         </div>
 
-        {/* White Rounded Tile: Supported Tests */}
-        <div className="w-[90%] max-w-[320px] bg-white rounded-[20px] py-2 px-4 shadow-lg text-center">
-          <p className="text-[12px] font-black text-slate-800 tracking-tight">
+        {/* White Rounded Tile: Supported Tests (Screen 3 Exact) */}
+        <div className="w-[88%] max-w-[320px] bg-white rounded-full py-2.5 px-4 shadow-lg text-center">
+          <p className="text-[12px] font-black text-slate-800 tracking-tight leading-tight">
             Supported Tests :
           </p>
-          <p className="text-[11px] font-bold text-[#0070d2] mt-0.5">
+          <p className="text-[11px] font-bold text-[#0070d2] mt-0.5 leading-tight">
             Urine • Antifreeze • Drug Screen
           </p>
         </div>
       </div>
-
-      {/* Gemini API Key Configuration Drawer */}
-      <AnimatePresence>
-        {customKeyModal && (
-          <div className="fixed inset-0 z-50 overflow-hidden flex flex-col justify-end">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setCustomKeyModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-              className="relative w-full bg-white text-slate-900 rounded-t-[36px] shadow-2xl p-5 z-10 space-y-3.5"
-            >
-              <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto -mt-1 mb-2"></div>
-
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-sky-100 text-[#0070d2] flex items-center justify-center">
-                  <Key className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-900">Gemini AI Vision Key</h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
-                    Google Gemini 2.5 Flash Multimodal Vision
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Enter your Gemini API Key
-                </label>
-                <input
-                  type="password"
-                  placeholder="AIzaSy..."
-                  value={userGeminiKey}
-                  onChange={(e) => setUserGeminiKey(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#0070d2]"
-                />
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  Keys are kept secure in memory and used for direct strip pad analysis.
-                </span>
-              </div>
-
-              <div className="pt-1 flex gap-2">
-                <button
-                  onClick={() => setCustomKeyModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => setCustomKeyModal(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-[#0070d2] hover:bg-[#005fb2] text-xs font-bold text-white shadow-md"
-                >
-                  Save API Key
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
